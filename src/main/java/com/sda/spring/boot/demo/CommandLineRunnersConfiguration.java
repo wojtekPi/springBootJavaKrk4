@@ -1,5 +1,6 @@
 package com.sda.spring.boot.demo;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,9 @@ import java.util.Arrays;
 @Configuration
 public class CommandLineRunnersConfiguration {
 
+    @Autowired
+    CurrencyRatioUpdaterService currencyRatioUpdaterService;
+
     @Bean
     CommandLineRunner addInitalDataToDB(CurrencyRatioRepository currencyRatioRepository) {
         return strings -> {
@@ -21,6 +25,22 @@ public class CommandLineRunnersConfiguration {
                     });
 
             currencyRatioRepository.findAll().stream().forEach(System.out::println);
+
+
         };
     }
+
+    @Bean
+    CommandLineRunner fetchExternalData(CurrencyRatioRepository currencyRatioRepository){
+        return (args) -> {
+
+            while(true) {
+                JsonExternalRestResponse response = currencyRatioUpdaterService.getResponse("USD");
+                CurrencyRatio currencyRatio = new CurrencyRatio(response.getBase(),"CZK",LocalDateTime.now(),new BigDecimal(response.getRates().get("CZK")));
+                currencyRatioRepository.save(currencyRatio);
+                Thread.sleep(10000);
+            }
+        };
+    }
+
 }
